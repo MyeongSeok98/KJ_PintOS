@@ -110,8 +110,8 @@ syscall_handler (struct intr_frame *f) {
 		case SYS_SEEK:		// 11
 			seek(f->R.rdi, f->R.rsi); 
 			break;	
-		// case SYS_TELL:	// 12
-		// 	break;
+		case SYS_TELL:	// 12
+			break;
 		case SYS_CLOSE:		// 13
 			close(f->R.rdi);
 			break;
@@ -132,6 +132,7 @@ void exit(int status){
 	/* rox 용 */
 	if(thread_current()->running_file){
 		file_allow_write(thread_current()->running_file);
+		thread_current()->running_file = NULL;
 		file_close(thread_current()->running_file);
 
 	}
@@ -157,7 +158,7 @@ int exec(const char *cmd_line){
 		exit(-1);
 	}
 
-	return 0;
+	return 0; 
 }
 
 int wait(pid_t pid){

@@ -122,7 +122,6 @@ page_fault (struct intr_frame *f) {
 	/* 인터럽트를 다시 켜세요(CR2가 변경되기 전에 읽을 수 있도록 하기 위해 인터럽트를 꺼두었습니다). */
 	intr_enable ();
 
-
 	/* 원인을 파악하세요. */
 	not_present = (f->error_code & PF_P) == 0;
 	write = (f->error_code & PF_W) != 0;
@@ -143,6 +142,8 @@ page_fault (struct intr_frame *f) {
 			not_present ? "not present" : "rights violation",
 			write ? "writing" : "reading",
 			user ? "user" : "kernel");
-	kill (f);
+	// kill (f);
+	/* 페이지 폴트 시 exit-1 */
+	exit(-1);
 }
 
