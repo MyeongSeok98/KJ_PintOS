@@ -26,8 +26,7 @@ static void page_fault (struct intr_frame *);
    가상 메모리를 구현하려면 이를 변경해야 합니다.
 
    각 예외에 대한 설명은 [IA32-v3a] 섹션 5.15 "예외 및 인터럽트 참조"를 참조하세요. */
-void
-exception_init (void) {
+void exception_init (void) {
 	/* 이러한 예외는 사용자 프로그램에서 명시적으로 발생할 수 있습니다. (예: INT, INT3, INTO, BOUND 명령어)
 	  따라서 DPL==3으로 설정하면 사용자 프로그램에서 밑에와 같은 명령어를 통해 예외를 호출할 수 있습니다. */
 	intr_register_int (3, 3, INTR_ON, kill, "#BP Breakpoint Exception");
@@ -135,7 +134,11 @@ page_fault (struct intr_frame *f) {
 
 	/* 페이지 폴트를 계산합니다. */
 	page_fault_cnt++;
-
+	if (user)
+	{
+	exit(0);
+	NOT_REACHED();
+	}	
 	/* 오류가 실제 오류인 경우 정보를 표시하고 종료합니다. */
 	printf ("Page fault at %p: %s error %s page in %s context.\n",
 			fault_addr,
