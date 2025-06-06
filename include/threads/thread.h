@@ -126,6 +126,8 @@ typedef int tid_t;
 	/* Table for whole virtual memory owned by thread. */
 	struct supplemental_page_table spt;
 	void *stack_bottom;
+	uintptr_t backup_rsp;
+
 #endif
 
 	/* Owned by thread.c. */

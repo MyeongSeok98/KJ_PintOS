@@ -281,10 +281,15 @@ void close (int fd){
 }
 
 void is_user_memory(void * addr){
+	/*
 	struct thread *cur = thread_current();
 	if(addr == NULL || !is_user_vaddr(addr) || pml4_get_page(cur->pml4, addr) == NULL){
 		exit(-1);
 	}
+	*/
+	struct thread *curr = thread_current();
+	if(addr == NULL || is_kernel_vaddr(addr) || !spt_find_page(&curr -> spt, addr)) exit(-1);
+	return;
 }
 
 struct file *fd_to_file(int fd){

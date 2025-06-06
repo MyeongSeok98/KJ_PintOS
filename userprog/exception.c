@@ -136,7 +136,7 @@ page_fault (struct intr_frame *f) {
 	page_fault_cnt++;
 	if (user)
 	{
-	exit(0);
+	exit(-1);
 	NOT_REACHED();
 	}	
 	/* 오류가 실제 오류인 경우 정보를 표시하고 종료합니다. */

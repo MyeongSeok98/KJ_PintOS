@@ -728,12 +728,10 @@ lazy_load_segment (struct page *page, void *aux) {
 	uint32_t file_zero_bytes = ((struct container*)aux) -> page_zero_bytes;
 	
 	file_seek(file, file_offset);
-	/*
-	printf("file : %p\n", file);
-	printf("file_read_bytes : %d\n", file_read_bytes);
-	printf("file_zero_bytes: %d\n", file_zero_bytes);
-	printf("file_offset : %d\n", file_offset);
-	*/
+	// printf("file : %p\n", file);
+	// printf("file_read_bytes : %d\n", file_read_bytes);
+	// printf("file_zero_bytes: %d\n", file_zero_bytes);
+	// printf("file_offset : %d\n", file_offset);
 	if(file_read_bytes != 0 && file_read(file, page->frame->kva, file_read_bytes) != (int) file_read_bytes){
 		// printf("lazy load seg\n");
 		free(aux);
@@ -791,14 +789,16 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
 		/* TODO: Set up aux to pass information to the lazy_load_segment. */
 		/* TODO: lazy_load_segment으로 정보를 전달하기 위한 aux를 설정합니다. */
+		
+		
 		struct container *aux = malloc(sizeof (struct container));
 
 		aux -> file = file;
 		aux -> ofs = ofs;
 		aux -> page_read_bytes = page_read_bytes;
 		aux -> page_zero_bytes = page_zero_bytes;
-
-		if (!vm_alloc_page_with_initializer (VM_ANON, upage,
+		// printf("load_segment read_bytes : %d\n", aux -> page_read_bytes);
+		if (!vm_alloc_page_with_initializer (VM_FILE, upage,
 					writable, lazy_load_segment, aux))
 			return false;
   
@@ -827,13 +827,13 @@ setup_stack (struct intr_frame *if_) {
 	 * TODO: 성공하면 if_->rsp를 적절히 설정하세요.
 	 * TODO: 이 페이지가 스택임을 표시해야 합니다. */
 	/* TODO: 여기에 코드를 작성하세요 */
-	/* ANONN*/
+	/* ANON */
 	if(vm_alloc_page(VM_ANON, stack_bottom, true)){
 		success = vm_claim_page(stack_bottom);
 
 		if(success){
 			if_->rsp = USER_STACK;		/* 가상주소의 유저 스택 맨 윗부분에 넣어놓는다, */
-			thread_current() -> stack_bottom = stack_bottom; /* */
+			thread_current() -> stack_bottom = stack_bottom; /*  */
 		}
 	}
 	return success;
