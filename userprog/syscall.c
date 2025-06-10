@@ -74,7 +74,7 @@ void
 syscall_handler (struct intr_frame *f) {
 
 	int sc_number =f -> R.rax;
-	// printf("%d\n", sc_number);
+	// printf("systemcall : %d\n", sc_number);
 	switch(sc_number){
 		case SYS_HALT:		// 0
 			halt();
@@ -115,6 +115,12 @@ syscall_handler (struct intr_frame *f) {
 			break;
 		case SYS_CLOSE:		// 13
 			close(f->R.rdi);
+			break;
+		case SYS_MMAP:		// 14
+			f->R.rax = mmap(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
+			break;
+		case SYS_MUNMAP:	// 15
+			munmap(f->R.rdi);
 			break;
 		default:
 			exit(f->R.rdi);
@@ -174,10 +180,13 @@ bool create(const char *file, unsigned initial_size){
 
 int open(const char *file){
 	is_user_memory(file);
+	lock_acquire(&filesys_lock);
 	struct thread *curr = thread_current();
 	struct file *opened_file = filesys_open(file);
 	// file_deny_write(opened_file);
 	int a = file_to_fd(opened_file);
+	// printf("%d\n",a);
+	lock_release(&filesys_lock);
 	return a;
 }
 
@@ -233,8 +242,11 @@ int read(int fd, void *buffer, unsigned size){
 		return bytes;
 	}
 	else{
-		// file_deny_write(readed_file);
-		lock_acquire(&filesys_lock);
+		struct page *current_page = spt_find_page(&curr->spt, buffer);
+		if(!current_page ->writable){
+			exit(-1);
+		}
+		lock_acquire(&filesys_lock); 
 		bytes = file_read (readed_file, buffer, size);
 		lock_release(&filesys_lock);
 	}
@@ -278,6 +290,26 @@ void close (int fd){
 	if(f == NULL){
 		return;
 	} 
+}
+
+void *mmap (void *addr, size_t length, int writable, int fd, off_t offset){
+	// printf("%d\n",fd);
+	struct file *f = thread_current() -> fdt[fd];
+	// printf("[Before mmap] addr : %p\n", addr);
+	// printf("[Before mmap] file : %p\n", f);
+	// printf("[Before mmap] length : %d\n", length);
+	// printf("[Before mmap] modified_pages : %d\n", thread_current()->modified_pages);
+	if(f == NULL || (uintptr_t)addr % 8 != 0 || length == 0 || addr == 0) return NULL;
+
+	void *result = do_mmap(addr, length, writable, f, offset);
+	// printf("[After mmap] result : %p\n", result); 
+	thread_current()->modified_pages++;
+	// printf("[After mmap] modified_pages : %d\n", thread_current()->modified_pages);
+	return result;
+}
+
+void munmap(void *addr){
+	do_munmap(addr);
 }
 
 void is_user_memory(void * addr){

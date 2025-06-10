@@ -79,6 +79,8 @@
         "stdint.h": "c",
         "chrono": "c",
         "ratio": "c",
-        "exception.h": "c"
+        "exception.h": "c",
+        "vm.h": "c",
+        "main.h": "c"
     }
 }

@@ -8,7 +8,7 @@
 #include "userprog/gdt.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
-#include "intrinsic.h"
+#include "intrinsic.h"  
 
 /* 처리된 페이지 오류 수. */
 static long long page_fault_cnt;

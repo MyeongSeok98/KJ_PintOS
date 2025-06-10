@@ -1,6 +1,6 @@
 #ifndef THREADS_THREAD_H
 #define THREADS_THREAD_H
-
+// #define VM
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
@@ -117,6 +117,7 @@ typedef int tid_t;
 	struct semaphore fork_sema;				/* 2 */
 	struct semaphore free_sema;				/* 3 */
 	struct file *running_file;				/* 쓰레드에서 실행하고 있는 파일 */
+	uint64_t modified_pages;				/* P3 : 수정된 페이지 번호 */
 	/* 여기까지 */
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
@@ -127,7 +128,6 @@ typedef int tid_t;
 	struct supplemental_page_table spt;
 	void *stack_bottom;
 	uintptr_t backup_rsp;
-
 #endif
 
 	/* Owned by thread.c. */

@@ -713,7 +713,7 @@ install_page (void *upage, void *kpage, bool writable) {
  * If you want to implement the function for only project 2, implement it on the
  * upper block. */
 
-static bool
+bool
 lazy_load_segment (struct page *page, void *aux) {
 	/* TODO: Load the segment from the file */
 	/* TODO: This called when the first page fault occurs on address VA. */
@@ -728,16 +728,22 @@ lazy_load_segment (struct page *page, void *aux) {
 	uint32_t file_zero_bytes = ((struct container*)aux) -> page_zero_bytes;
 	
 	file_seek(file, file_offset);
-	// printf("file : %p\n", file);
-	// printf("file_read_bytes : %d\n", file_read_bytes);
-	// printf("file_zero_bytes: %d\n", file_zero_bytes);
-	// printf("file_offset : %d\n", file_offset);
+	// printf("[lazy_load_segment] file : %p\n", file);
+	// printf("[lazy_load_segment] file_read_bytes : %d\n", file_read_bytes);
+	// printf("[lazy_load_segment] file_zero_bytes: %d\n", file_zero_bytes);
+	// printf("[lazy_load_segment] file_offset : %d\n", file_offset);
 	if(file_read_bytes != 0 && file_read(file, page->frame->kva, file_read_bytes) != (int) file_read_bytes){
-		// printf("lazy load seg\n");
+		
+		// printf("free free \n");
 		free(aux);
 		return false;
 	}
+	page->modified = thread_current() -> modified_pages;
 	memset(page -> frame -> kva + file_read_bytes, 0, file_zero_bytes);
+	// printf("[lazy_load_segment] va : %p\n", page -> va);
+	// printf("[lazy_load_segment] aux : %p\n", aux);
+	// printf("[lazy_load_segment] aux_file : %p\n", file);
+	// printf("[lazy_load_segment] modified : %d\n", page -> modified);
 	free(aux);
 	return true;
 }
@@ -791,7 +797,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		/* TODO: lazy_load_segment으로 정보를 전달하기 위한 aux를 설정합니다. */
 		
 		
-		struct container *aux = malloc(sizeof (struct container));
+		struct container *aux = calloc(1, sizeof (struct container));
 
 		aux -> file = file;
 		aux -> ofs = ofs;

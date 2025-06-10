@@ -56,25 +56,21 @@ static struct frame *vm_evict_frame (void);
 bool
 vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 		vm_initializer *init, void *aux) {
-
 	ASSERT (VM_TYPE(type) != VM_UNINIT)
 	// printf("vm alloc page\n");
 	struct supplemental_page_table *spt = &thread_current ()->spt;
 	
 	void *va = pg_round_down(upage);
-	/* Check wheter the upage is already occupied or not. */
+	// printf("[vm_alloc_page_with_initializer] va : %p\n", va);
+	// printf("[vm_alloc_page_with_initializer] upage : %p\n", upage);
 	/* upage가 이미 점유되어 있는지 확인합니다. */
-	if (spt_find_page (spt, upage) == NULL) {
-		/* TODO: Create the page, fetch the initialier according to the VM type,
-		 * TODO: and then create "uninit" page struct by calling uninit_new. You
-		 * TODO: should modify the field after calling the uninit_new. */
+	if (spt_find_page (spt, va) == NULL) {
 		/* TODO: 페이지를 생성하고, VM 타입에 따라 초기화자를 가져온 후,
 		 * TODO: uninit_new를 호출하여 '언인트(uninit)' 페이지 구조체를 생성하세요.
 		 * TODO: uninit_new를 호출한 후 필드를 수정해야 합니다. */
 
-		/* TODO: Insert the page into the spt. */
 		/* TODO: 페이지를 spt에 삽입하세요. */
-		struct page *pg = malloc(sizeof(struct page));
+		struct page *pg = calloc(1, sizeof(struct page));
 		if(pg == NULL){
 			return NULL;
 		}
@@ -241,15 +237,37 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 	
 	void *upage = pg_round_down(addr);
 	if(not_present){
-		uintptr_t *rsp = f->rsp;
+		uintptr_t *rsp;
+		if(user){
+			rsp = f->rsp;
+		}
+		else{
+			rsp = thread_current() -> tf.rsp;
+		}
 		void *fault_addr = addr;
 		/* (uint8_t*)로 캐스팅해야하나?*/
-		if(fault_addr < thread_current()-> stack_bottom &&fault_addr >= rsp - 32){
+		void *upage = pg_round_down(fault_addr);
+		while(thread_current() -> stack_bottom > fault_addr && fault_addr >= rsp - 32){
+			// printf("stack Growth함\n");
+			if(addr <= USER_STACK - 0x100000){
+				// printf("1MB limit over\n");
+				return false;
+			}
+			void *new_page = thread_current() -> stack_bottom - PGSIZE;
+			vm_stack_growth(new_page);
+			thread_current() -> stack_bottom = thread_current() -> stack_bottom - PGSIZE;
+			if(thread_current() -> stack_bottom < fault_addr){
+				// printf("stack Growth완료 \n");
+				return true;
+			}
+		}/*
+		if(addr >= USER_STACK - 0x100000 && fault_addr < thread_current()-> stack_bottom &&fault_addr >= rsp - 32){
 			void *upage = pg_round_down(fault_addr);
 			vm_stack_growth(upage);
 			thread_current() -> stack_bottom = thread_current() -> stack_bottom - PGSIZE;
 			return true;
 		}
+		*/
 		page = spt_find_page(spt, upage);
 		if(page == NULL)
 			return false;
@@ -309,7 +327,7 @@ vm_do_claim_page (struct page *page) {
 
 uint64_t spt_hash_func(const struct hash_elem *e, void *aux){
 	struct page *pe = hash_entry(e, struct page, h_elem);
-	
+	 
 	return hash_bytes(&pe->va, sizeof pe->va);
 }
 
@@ -345,7 +363,7 @@ supplemental_page_table_copy (struct supplemental_page_table *dst UNUSED,
 		bool src_writable = src_page->writable;
 		
 		if(src_type == VM_UNINIT){
-			vm_alloc_page_with_initializer(src_type, va, src_writable, src_page->uninit.page_initializer, src_page->uninit.aux);
+			vm_alloc_page_with_initializer(VM_ANON, va, src_writable, src_page->uninit.page_initializer, src_page->uninit.aux);
 			continue;
 		}
 		// else if(src_type == VM_FILE){
