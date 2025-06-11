@@ -260,14 +260,7 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 				// printf("stack Growth완료 \n");
 				return true;
 			}
-		}/*
-		if(addr >= USER_STACK - 0x100000 && fault_addr < thread_current()-> stack_bottom &&fault_addr >= rsp - 32){
-			void *upage = pg_round_down(fault_addr);
-			vm_stack_growth(upage);
-			thread_current() -> stack_bottom = thread_current() -> stack_bottom - PGSIZE;
-			return true;
 		}
-		*/
 		page = spt_find_page(spt, upage);
 		if(page == NULL)
 			return false;

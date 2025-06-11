@@ -141,7 +141,19 @@ void exit(int status){
 		file_allow_write(thread_current()->running_file);
 		thread_current()->running_file = NULL;
 		file_close(thread_current()->running_file);
+	}
+	struct supplemental_page_table *spt = &thread_current()-> spt;
+	if(!hash_empty(&spt -> spt)){
+		struct hash_iterator iter;
 
+		hash_first(&iter, &spt->spt);
+		while(hash_next(&iter) != NULL){
+			struct hash_elem *he = hash_cur(&iter);
+			struct page *pg = hash_entry(he, struct page, h_elem);
+			if(&pg ->file == thread_current()->running_file){
+				do_munmap(pg->va);
+			}
+		}
 	}
 	thread_exit();
 }
@@ -175,7 +187,10 @@ int wait(pid_t pid){
 
 bool create(const char *file, unsigned initial_size){
 	is_user_memory(file);
-	return filesys_create(file, initial_size);
+	lock_acquire(&filesys_lock);
+	bool success = filesys_create(file, initial_size);
+	lock_release(&filesys_lock);
+	return success;
 }
 
 int open(const char *file){
@@ -294,6 +309,8 @@ void close (int fd){
 
 void *mmap (void *addr, size_t length, int writable, int fd, off_t offset){
 	// printf("%d\n",fd);
+	if(is_kernel_vaddr(addr)) return NULL;
+	if(fd < 2 || fd >= 64) return NULL;
 	struct file *f = thread_current() -> fdt[fd];
 	// printf("[Before mmap] addr : %p\n", addr);
 	// printf("[Before mmap] file : %p\n", f);

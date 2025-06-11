@@ -4,6 +4,7 @@
 #include "userprog/process.h"
 #include "threads/vaddr.h"
 #include "filesys/file.h"
+#include "threads/mmu.h"
 
 static bool file_backed_swap_in (struct page *page, void *kva);
 static bool file_backed_swap_out (struct page *page);
@@ -26,9 +27,13 @@ vm_file_init (void) {
 bool
 file_backed_initializer (struct page *page, enum vm_type type, void *kva) {
 	/* Set up the handler */
-	page->operations = &file_ops;
 
-	struct file_page *file_page = &page->file;
+	page->operations = &file_ops;
+	
+	struct file_page *file_page = &page->file;  
+
+	file_page ->aux = page->uninit.aux;
+	return true;
 }
 
 /* Swap in the page by read contents from the file. */
@@ -38,7 +43,7 @@ file_backed_swap_in (struct page *page, void *kva) {
 }
 
 /* Swap out the page by writeback contents to the file. */
-static bool
+static bool 
 file_backed_swap_out (struct page *page) {
 	struct file_page *file_page UNUSED = &page->file;
 }
@@ -47,6 +52,15 @@ file_backed_swap_out (struct page *page) {
 static void
 file_backed_destroy (struct page *page) {
 	struct file_page *file_page UNUSED = &page->file;
+
+	struct container *file_aux = (struct container *)file_page->aux;
+	// struct thread *t = thread_current();
+
+	// if(pml4_is_dirty(t->pml4, page->va)){			
+	// 	file_write_at(file_aux->file, page->va, file_aux->page_read_bytes, file_aux->ofs);
+	// 	pml4_set_dirty(t->pml4, page->va, 0);
+	// }
+	// pml4_clear_page(t->pml4, page->va);
 }
 
 /* Do the mmap */
@@ -60,11 +74,13 @@ do_mmap (void *addr, size_t length, int writable,
 	while(calculate_length > 0){
 		// printf("[mmap] calculate_length : %d\n", calculate_length);
 		uint32_t page_read_bytes;
-		if(calculate_length >= PGSIZE) page_read_bytes = PGSIZE;
+		if(calculate_length >= PGSIZE) page_read_bytes = PGSIZE; 
 		else page_read_bytes = calculate_length;
+ 
+		if(is_kernel_vaddr(addr+ PGSIZE)) return NULL;
 		uint32_t page_zero_bytes = PGSIZE - page_read_bytes;
 		struct container *aux = calloc(1, sizeof (struct container));
-		aux -> file = file;
+		aux -> file = file_reopen(file);
 		aux -> ofs = offset;
 		aux -> page_read_bytes = page_read_bytes;
 		aux -> page_zero_bytes = page_zero_bytes;
@@ -78,7 +94,7 @@ do_mmap (void *addr, size_t length, int writable,
 		// printf("[mmap] addr : %p\n", addr); 
 		// printf("calculat_length : %d\n", calculate_length);
 	}
-	// printf("[mmap] backup_addr : %p\n", backup_addr);
+	// printf("[mmap] backup_addr : %p\n", backup_addr); 
 	return backup_addr;
 }
 
@@ -87,14 +103,23 @@ void
 do_munmap (void *addr) {
 	struct supplemental_page_table *spt = &thread_current() -> spt;
 	struct page *page = spt_find_page(spt, addr);
-	// printf("[munmap] page_modified : %d\n", page->modified);
+	//printf("[munmap] page_modified : %d\n", page->modified);
 
 	int page_number = page->modified;
-
+	struct container *aux = (struct container *)page->uninit.aux;
 	while(page && page -> modified == page_number){
+		printf("[do_munmap] modified = %d\n",page -> modified);
 		if(page){
+			if(pml4_is_dirty(&thread_current()->pml4, page->va)){
+				file_write_at(aux->file, addr, aux->page_read_bytes, aux->ofs);
+				pml4_set_dirty(&thread_current()->pml4, page->va, 0);
+			}
 			destroy(page);
 		}
+		// struct container* container = (struct container*)page->uninit.aux;
+		// page->file.aux = container;
+
+		// file_backed_destroy(page);
 		addr+= PGSIZE;
 		page = spt_find_page(spt, addr);
 	}
