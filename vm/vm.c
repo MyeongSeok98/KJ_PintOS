@@ -2,8 +2,10 @@
 
 #include "threads/malloc.h"
 #include "vm/vm.h"
+#include "userprog/process.h"
 #include "vm/inspect.h"
 #include "threads/mmu.h"
+#include "filesys/file.h"
 
 static struct list frame_table;
 static struct lock frame_lock;
@@ -356,12 +358,25 @@ supplemental_page_table_copy (struct supplemental_page_table *dst UNUSED,
 		bool src_writable = src_page->writable;
 		
 		if(src_type == VM_UNINIT){
-			vm_alloc_page_with_initializer(VM_ANON, va, src_writable, src_page->uninit.page_initializer, src_page->uninit.aux);
+			vm_alloc_page_with_initializer(VM_FILE, va, src_writable, src_page->uninit.page_initializer, src_page->uninit.aux);
 			continue;
 		}
 		// else if(src_type == VM_FILE){
-
-		// }
+		// 	struct container *file_aux = malloc(sizeof(struct container));
+		// 	struct container *container = (struct container*)src_page->uninit.aux;
+		// 	file_aux -> file = container->file;
+		// 	file_aux -> ofs = container->ofs;
+		// 	file_aux -> page_read_bytes = container ->page_read_bytes;
+		// 	file_aux -> page_zero_bytes = container ->page_zero_bytes;
+		// 	if(!vm_alloc_page_with_initializer(src_type, va, src_writable, NULL, file_aux)){
+		// 		return false;
+		// 	}
+		// 	 struct page *file_page = spt_find_page(dst, va);
+		// 	 file_backed_initializer(file_page, src_type, NULL);
+		// 	 file_page->frame = src_page->frame;
+		// 	 pml4_set_page(thread_current()->pml4, file_page->va, src_page->frame->kva, src_page->writable);
+		// 	continue;
+		// } 
 		else{
 			/* 가상 메모리 페이지 할당 */
 			if(!vm_alloc_page(src_type, va, src_writable)){

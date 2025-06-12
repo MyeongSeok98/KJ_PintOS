@@ -81,6 +81,7 @@
         "ratio": "c",
         "exception.h": "c",
         "vm.h": "c",
-        "main.h": "c"
+        "main.h": "c",
+        "qsort.h": "c"
     }
 }

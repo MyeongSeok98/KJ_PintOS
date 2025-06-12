@@ -95,6 +95,7 @@ syscall_handler (struct intr_frame *f) {
 			f->R.rax = create(f->R.rdi, f->R.rsi);
 			break;
 		case SYS_REMOVE:	// 6
+			f->R.rax = remove(f->R.rdi);
 			break;
 		case SYS_OPEN:		// 7
 			f->R.rax = open(f->R.rdi);
@@ -145,12 +146,12 @@ void exit(int status){
 	struct supplemental_page_table *spt = &thread_current()-> spt;
 	if(!hash_empty(&spt -> spt)){
 		struct hash_iterator iter;
-
+		
 		hash_first(&iter, &spt->spt);
 		while(hash_next(&iter) != NULL){
 			struct hash_elem *he = hash_cur(&iter);
 			struct page *pg = hash_entry(he, struct page, h_elem);
-			if(&pg ->file == thread_current()->running_file){
+			if(pg->operations->type == VM_FILE){
 				do_munmap(pg->va);
 			}
 		}
@@ -200,7 +201,6 @@ int open(const char *file){
 	struct file *opened_file = filesys_open(file);
 	// file_deny_write(opened_file);
 	int a = file_to_fd(opened_file);
-	// printf("%d\n",a);
 	lock_release(&filesys_lock);
 	return a;
 }
@@ -244,6 +244,7 @@ int read(int fd, void *buffer, unsigned size){
 		return -1; 
 	}
 	int bytes = 0;
+	lock_acquire(&filesys_lock);
 	if(fd == 1) exit(-1);
 	if(fd == 0){
 		for(int i = 0; i < size; i++){	
@@ -261,7 +262,6 @@ int read(int fd, void *buffer, unsigned size){
 		if(!current_page ->writable){
 			exit(-1);
 		}
-		lock_acquire(&filesys_lock); 
 		bytes = file_read (readed_file, buffer, size);
 		lock_release(&filesys_lock);
 	}
@@ -317,7 +317,7 @@ void *mmap (void *addr, size_t length, int writable, int fd, off_t offset){
 	// printf("[Before mmap] length : %d\n", length);
 	// printf("[Before mmap] modified_pages : %d\n", thread_current()->modified_pages);
 	if(f == NULL || (uintptr_t)addr % 8 != 0 || length == 0 || addr == 0) return NULL;
-
+	if(offset % PGSIZE != 0) return NULL;
 	void *result = do_mmap(addr, length, writable, f, offset);
 	// printf("[After mmap] result : %p\n", result); 
 	thread_current()->modified_pages++;

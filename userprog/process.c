@@ -738,13 +738,15 @@ lazy_load_segment (struct page *page, void *aux) {
 		free(aux);
 		return false;
 	}
-	page->modified = thread_current() -> modified_pages;
+	/* 테스트 modified_number_test*/
+	// page->modified = thread_current() -> modified_pages;
 	memset(page -> frame -> kva + file_read_bytes, 0, file_zero_bytes);
+	// printf("[lazy_load_segment] page->modified : %d\n", page->modified);
 	// printf("[lazy_load_segment] va : %p\n", page -> va);
 	// printf("[lazy_load_segment] aux : %p\n", aux);
 	// printf("[lazy_load_segment] aux_file : %p\n", file);
 	// printf("[lazy_load_segment] modified : %d\n", page -> modified);
-	free(aux);
+	// free(aux);
 	return true;
 }
 
@@ -804,7 +806,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		aux -> page_read_bytes = page_read_bytes;
 		aux -> page_zero_bytes = page_zero_bytes;
 		// printf("load_segment read_bytes : %d\n", aux -> page_read_bytes);
-		if (!vm_alloc_page_with_initializer (VM_FILE, upage,
+		if (!vm_alloc_page_with_initializer (VM_ANON, upage,
 					writable, lazy_load_segment, aux))
 			return false;
   

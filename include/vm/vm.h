@@ -52,6 +52,7 @@ struct page {
 	bool writable;
 	int modified;
 	
+	
 	/* Per-type data are binded into the union.
 	 * Each function automatically detects the current union */
 	union {

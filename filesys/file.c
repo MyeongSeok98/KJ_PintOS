@@ -3,6 +3,7 @@
 #include "filesys/inode.h"
 #include "threads/malloc.h"
 
+
 /* 열린 파일. */
 struct file {
 	struct inode *inode;        /* 파일의 인덱스 노드 */
