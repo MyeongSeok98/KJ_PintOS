@@ -7,10 +7,11 @@
 #include "filesys/inode.h"
 #include "filesys/directory.h"
 #include "devices/disk.h"
+#include "threads/synch.h"
 
 /* The disk that contains the file system. */
 struct disk *filesys_disk;
-
+struct lock *f_lock;
 static void do_format (void);
 
 /* 	파일 시스템 모듈을 시작한다.
@@ -20,7 +21,7 @@ filesys_init (bool format) {
 	filesys_disk = disk_get (0, 1);
 	if (filesys_disk == NULL)
 		PANIC ("hd0:1 (hdb) not present, file system initialization failed");
-
+	lock_init(&f_lock);
 	inode_init ();
 
 #ifdef EFILESYS
@@ -58,6 +59,7 @@ filesys_done (void) {
 	내부 메모리 할당이 실패하면 실패한다.*/
 bool
 filesys_create (const char *name, off_t initial_size) {
+	lock_acquire(&f_lock);
 	disk_sector_t inode_sector = 0;
 	struct dir *dir = dir_open_root ();
 	bool success = (dir != NULL
@@ -67,6 +69,7 @@ filesys_create (const char *name, off_t initial_size) {
 	if (!success && inode_sector != 0)
 		free_map_release (inode_sector, 1);
 	dir_close (dir);
+	lock_release(&f_lock);
 
 	return success;
 }
@@ -77,13 +80,14 @@ filesys_create (const char *name, off_t initial_size) {
 	내부 메모리 할당이 실패하면 실패한다.*/
 struct file *
 filesys_open (const char *name) {
+	lock_acquire(&f_lock);
 	struct dir *dir = dir_open_root ();
 	struct inode *inode = NULL;
 
 	if (dir != NULL)
 		dir_lookup (dir, name, &inode);
 	dir_close (dir);
-
+	lock_release(&f_lock);
 	return file_open (inode);
 }
 
@@ -94,9 +98,11 @@ filesys_open (const char *name) {
 	내부 메모리 할당이 실패하면 실패한다. */
 bool
 filesys_remove (const char *name) {
+	lock_acquire(&f_lock);
 	struct dir *dir = dir_open_root ();
 	bool success = dir != NULL && dir_remove (dir, name);
 	dir_close (dir);
+	lock_release(&f_lock);
 
 	return success;
 }

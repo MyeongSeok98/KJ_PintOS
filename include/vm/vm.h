@@ -2,6 +2,7 @@
 #define VM_VM_H
 #include <stdbool.h>
 #include "threads/palloc.h"
+#include "hash.h"
 
 enum vm_type {
 	/* page not initialized */
@@ -40,13 +41,18 @@ struct thread;
  * This is kind of "parent class", which has four "child class"es, which are
  * uninit_page, file_page, anon_page, and page cache (project4).
  * DO NOT REMOVE/MODIFY PREDEFINED MEMBER OF THIS STRUCTURE. */
+ /* 가상 페이지의 페이지 */
 struct page {
 	const struct page_operations *operations;
 	void *va;              /* Address in terms of user space */
 	struct frame *frame;   /* Back reference for frame */
 
-	/* Your implementation */
-
+	/* 프로젝트 3을 위해 삽입할 곳 */
+	struct hash_elem h_elem;
+	bool writable;
+	int modified;
+	
+	
 	/* Per-type data are binded into the union.
 	 * Each function automatically detects the current union */
 	union {
@@ -60,9 +66,11 @@ struct page {
 };
 
 /* The representation of "frame" */
+/* 물리 페이지의 프레임 */
 struct frame {
-	void *kva;
-	struct page *page;
+	void *kva;		/* 커널 주소 공간에서 물리 페이지에 매핑된 커널 가상 주소 */
+	struct page *page;	/* 이 프레임에 할당된 페이지를 가리키는 포인터 */
+	struct list_elem frame_elem;	/* 프레임테이블에서 리스트 목록에 쓰이는 elem */
 };
 
 /* The function table for page operations.
@@ -81,13 +89,17 @@ struct page_operations {
 #define destroy(page) \
 	if ((page)->operations->destroy) (page)->operations->destroy (page)
 
-/* Representation of current process's memory space.
- * We don't want to force you to obey any specific design for this struct.
- * All designs up to you for this. */
+/* 현재 프로세스의 메모리 공간을 표현합니다.
+ * 이 구조체에 대해 특정한 설계 방식을 따르도록 강제하고 싶지 않습니다.
+ * 모든 설계는 여러분에게 맡깁니다. */
 struct supplemental_page_table {
+	struct hash spt;
+	struct hash_iterator spt_iterator;
 };
 
 #include "threads/thread.h"
+uint64_t spt_hash_func(const struct hash_elem *e, void *aux);
+bool spt_hash_less_func(const struct hash_elem *a, const struct hash_elem *b, void *aux);
 void supplemental_page_table_init (struct supplemental_page_table *spt);
 bool supplemental_page_table_copy (struct supplemental_page_table *dst,
 		struct supplemental_page_table *src);

@@ -3,7 +3,7 @@
 #include "vm/vm.h"
 struct page;
 enum vm_type;
-
+/* 수정 필요한가*/
 struct anon_page {
 };
 

@@ -492,6 +492,7 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->original_priority = priority;
 	t->waiting_lock = NULL;
 	t->having_locks = 0;
+	t->modified_pages = 1;
 
 	list_init(&t->child_list);
 

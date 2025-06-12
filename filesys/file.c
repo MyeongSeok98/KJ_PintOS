@@ -3,6 +3,7 @@
 #include "filesys/inode.h"
 #include "threads/malloc.h"
 
+
 /* 열린 파일. */
 struct file {
 	struct inode *inode;        /* 파일의 인덱스 노드 */
@@ -76,6 +77,7 @@ off_t
 file_read (struct file *file, void *buffer, off_t size) {
 	off_t bytes_read = inode_read_at (file->inode, buffer, size, file->pos);
 	file->pos += bytes_read;	// 바이트 읽은 수만큼 file -> pos 이동시킴
+	// printf("[file_read] bytes_read : %d\n", bytes_read);
 	return bytes_read;
 }
 

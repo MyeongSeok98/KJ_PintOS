@@ -11,11 +11,11 @@ typedef bool vm_initializer (struct page *, void *aux);
  * "Lazy loading". */
 struct uninit_page {
 	/* Initiate the contets of the page */
-	vm_initializer *init;
+	vm_initializer *init;	/* 실제로 가져오는걸 나중에 수행해줌 */
 	enum vm_type type;
 	void *aux;
 	/* Initiate the struct page and maps the pa to the va */
-	bool (*page_initializer) (struct page *, enum vm_type, void *kva);
+	bool (*page_initializer) (struct page *, enum vm_type, void *kva);	/* 타입에 따라 다르게 SWAP TABLE에 넣을지 아니면 disk에 넣을지만 알려줌 */
 };
 
 void uninit_new (struct page *page, void *va, vm_initializer *init,

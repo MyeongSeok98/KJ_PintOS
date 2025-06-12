@@ -71,6 +71,17 @@
         "loader.h": "c",
         "malloc.h": "c",
         "debug.h": "c",
-        "inode.h": "c"
+        "inode.h": "c",
+        "stdbool.h": "c",
+        "pte.h": "c",
+        "hash.h": "c",
+        "inspect.h": "c",
+        "stdint.h": "c",
+        "chrono": "c",
+        "ratio": "c",
+        "exception.h": "c",
+        "vm.h": "c",
+        "main.h": "c",
+        "qsort.h": "c"
     }
 }
